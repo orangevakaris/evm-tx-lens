@@ -1,0 +1,22 @@
+{
+  "name": "evm-tx-lens",
+  "version": "0.1.0",
+  "description": "Offline EVM transaction and approval decoder with risk-focused output.",
+  "type": "module",
+  "bin": {
+    "evm-tx-lens": "./bin/evm-tx-lens.js"
+  },
+  "exports": "./src/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "ethereum",
+    "evm",
+    "transaction",
+    "approval",
+    "security",
+    "wallet"
+  ],
+  "license": "MIT"
+}
