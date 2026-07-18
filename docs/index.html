@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Decode common EVM approvals and transaction calldata locally in your browser.">
+    <title>EVM Tx Lens | Read before you sign</title>
+    <style>
+      :root {
+        --ink: #16211f;
+        --paper: #f5f1e7;
+        --warm: #e8dec8;
+        --signal: #e24b2b;
+        --safe: #1f6b4f;
+        --line: #b9b09d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        color: var(--ink);
+        font-family: Georgia, "Times New Roman", serif;
+        background:
+          radial-gradient(circle at 88% 8%, #d6e5d3 0 9%, transparent 26%),
+          linear-gradient(135deg, transparent 0 49.5%, rgba(22, 33, 31, .035) 50% 50.5%, transparent 51%) 0 0 / 24px 24px,
+          var(--paper);
+      }
+      main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 52px 0 72px; }
+      header { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: end; border-bottom: 2px solid var(--ink); padding-bottom: 26px; }
+      h1 { margin: 0; font-size: clamp(2.8rem, 8vw, 6.4rem); line-height: .83; letter-spacing: -.075em; max-width: 650px; }
+      .eyebrow, button, label, .risk-label { font-family: "Courier New", monospace; letter-spacing: .05em; text-transform: uppercase; }
+      .eyebrow { margin: 0 0 14px; font-size: .76rem; }
+      .mark { width: 64px; height: 64px; border-radius: 50%; background: var(--signal); display: grid; place-items: center; color: white; font: 2rem/1 Georgia, serif; transform: rotate(-12deg); }
+      .lede { max-width: 620px; margin: 26px 0 34px; font-size: 1.25rem; line-height: 1.48; }
+      .grid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: 20px; }
+      section { border: 1px solid var(--line); background: rgba(255,255,255,.36); padding: 22px; box-shadow: 5px 5px 0 var(--warm); }
+      label { display: block; font-size: .74rem; font-weight: bold; margin: 16px 0 7px; }
+      label:first-child { margin-top: 0; }
+      input, textarea { width: 100%; color: var(--ink); border: 1px solid var(--ink); background: #fffdf7; padding: 11px; font: .86rem/1.4 "Courier New", monospace; }
+      textarea { min-height: 188px; resize: vertical; }
+      .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+      button { cursor: pointer; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); padding: 12px 15px; font-size: .72rem; font-weight: bold; }
+      button.secondary { background: transparent; color: var(--ink); }
+      button:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--signal); }
+      .empty { color: #6d6a62; font-style: italic; line-height: 1.5; }
+      .result { display: none; }
+      .result.visible { display: block; }
+      .risk { border-left: 7px solid var(--signal); padding-left: 14px; }
+      .risk.low, .risk.info { border-color: var(--safe); }
+      .risk-label { margin: 0; font-size: .72rem; font-weight: bold; }
+      h2 { margin: 7px 0 13px; font-size: 1.8rem; letter-spacing: -.035em; }
+      pre { overflow: auto; margin: 18px 0 0; padding: 12px; background: #eae4d7; font: .76rem/1.5 "Courier New", monospace; white-space: pre-wrap; }
+      footer { margin-top: 42px; font-size: .95rem; line-height: 1.5; }
+      footer a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+      @media (max-width: 720px) {
+        main { padding-top: 30px; }
+        header, .grid { grid-template-columns: 1fr; }
+        .mark { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">Offline EVM transaction reader</p>
+          <h1>Read before<br>you sign.</h1>
+        </div>
+        <div class="mark">?</div>
+      </header>
+      <p class="lede">Paste transaction JSON to inspect common approvals, NFT permissions, transfers, and unknown calldata. Everything runs locally in this tab. No RPC, wallet, or analytics.</p>
+      <div class="grid">
+        <section>
+          <label for="to">Target contract</label>
+          <input id="to" spellcheck="false" value="0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa">
+          <label for="value">Native value in wei</label>
+          <input id="value" spellcheck="false" value="0">
+          <label for="data">Calldata</label>
+          <textarea id="data" spellcheck="false">0x095ea7b30000000000000000000000001111111111111111111111111111111111111111ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff</textarea>
+          <div class="controls">
+            <button id="decode">Decode transaction</button>
+            <button class="secondary" id="example">Load approval example</button>
+          </div>
+        </section>
+        <section aria-live="polite">
+          <p class="empty" id="empty">A risk summary will appear here. The decoder is intentionally conservative: a familiar selector does not make a contract trustworthy.</p>
+          <div class="result" id="result">
+            <div class="risk" id="risk-box">
+              <p class="risk-label" id="risk-level"></p>
+              <h2 id="summary"></h2>
+              <div id="warnings"></div>
+            </div>
+            <pre id="details"></pre>
+          </div>
+        </section>
+      </div>
+      <footer>
+        Built as a small public experiment. <a href="https://github.com/orangevakaris/evm-tx-lens">Inspect the source on GitHub</a>.
+      </footer>
+    </main>
+    <script type="module">
+      import { decodeTransaction } from "../src/index.js";
+
+      const byId = (id) => document.getElementById(id);
+      const input = () => ({ to: byId("to").value, value: byId("value").value, data: byId("data").value });
+      const example = () => {
+        byId("to").value = "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        byId("value").value = "0";
+        byId("data").value = "0x095ea7b30000000000000000000000001111111111111111111111111111111111111111ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+      };
+      function decode() {
+        try {
+          const decoded = decodeTransaction(input());
+          byId("empty").style.display = "none";
+          byId("result").classList.add("visible");
+          const riskBox = byId("risk-box");
+          riskBox.className = `risk ${decoded.risk.level}`;
+          byId("risk-level").textContent = `${decoded.risk.level} risk | score ${decoded.risk.score}/100`;
+          byId("summary").textContent = decoded.summary;
+          byId("warnings").textContent = decoded.risk.warnings.join(" ");
+          byId("details").textContent = JSON.stringify(decoded.parameters, null, 2);
+        } catch (error) {
+          byId("empty").style.display = "block";
+          byId("empty").textContent = `Could not decode: ${error.message}`;
+          byId("result").classList.remove("visible");
+        }
+      }
+      byId("decode").addEventListener("click", decode);
+      byId("example").addEventListener("click", () => { example(); decode(); });
+      decode();
+    </script>
+  </body>
+</html>
