@@ -99,7 +99,7 @@
       </footer>
     </main>
     <script type="module">
-      import { decodeTransaction } from "../src/index.js";
+      import { decodeTransaction } from "./decoder.js";
 
       const byId = (id) => document.getElementById(id);
       const input = () => ({ to: byId("to").value, value: byId("value").value, data: byId("data").value });

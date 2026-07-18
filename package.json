@@ -8,6 +8,7 @@
   },
   "exports": "./src/index.js",
   "scripts": {
+    "build:demo": "node scripts/build-demo.mjs",
     "test": "node --test"
   },
   "keywords": [
